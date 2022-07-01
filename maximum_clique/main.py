@@ -7,6 +7,12 @@ from networkx.algorithms.approximation import clique
 import matplotlib.pyplot as plt
 import sys
 
+Gen = np.array([])
+Fit = np.array([])
+
+# {1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 16, 17, 18, 19, 24, 35, 36, 39, 41, 45, 47, 63, 92, 96, 98, 107}
+# 31
+
 max_clique_size = 2
 
 def load_graph(file_name):
@@ -22,22 +28,32 @@ def load_graph(file_name):
   return graph, node_count
 
 def fitness(graph, individual):
+
+  individual_graph = create_individual_graph(graph, individual)
+  sorted_graph_nodes = sorted(individual_graph.degree, key=lambda x: x[1])
   fitness = 0.0
-  print(individual)
-  for i in range(len(individual)):
-    if individual[i] == 1:
-      for j in range(len(individual)):
-        if i != j:
-          if not graph.has_edge(i, j):
-            fitness -= 5
-            print('-5')
-          else:
-            fitness += 10
-            print('+10')
+  for node_tuple in sorted_graph_nodes:
+    # Checking if nodes create complete graph aka clique
+    if nx.density(individual_graph) == 1.0:
+      # add found clique size to the fitness variable 
+      fitness += len(individual_graph.nodes)
+      break
     else:
-      fitness -= 0.5
-      print('-0.5')
+      fitness -= 1
+      individual_graph.remove_node(node_tuple[0])
+
   return fitness
+
+def create_individual_graph(graph, individual):
+  individual_graph = graph.copy()
+
+  individual_index = 0
+  for i in graph.nodes:
+    if individual[individual_index] == 0:
+      individual_graph.remove_node(i)
+    individual_index +=1
+  
+  return individual_graph
 
 def tournament_selection(population):
   new_population = []
@@ -62,30 +78,44 @@ def crossover(parent1, parent2, length):
   child2 = parent2[0:position] + parent1[position:length]
   return child1, child2
 
-def mutation(individual,probability = 0.4):
+def mutation(individual,probability = 0.6):
   length = len(individual)
   check = random.uniform(0, 1)
   if(check <= probability):
       position = random.randint(0, length-1)
-      # Perhaps change value in the position to the opposite number
-      individual[position] = random.randint(0, 1)
+      # Change value in the position to the opposite number
+      individual[position] = 1 - individual[position]
   return individual
+
+def individual_potential_clique(graph, individual):
+  result = []
+  clique_size = 0
+  individual_index = 0
+  for node in graph.nodes:
+    if individual[individual_index] == 1:
+      clique_size += 1
+      result.append(node)
+    individual_index += 1
+  return result, clique_size
 
 if __name__ == '__main__':
   graph = nx.Graph()
 
   # graph, node_count = load_graph('low.txt')
-  graph_edges, node_count = load_graph('low.txt')
+  graph_edges, node_count = load_graph('clique.txt')
   graph_nodes = list(range(1, node_count + 1))
   graph.add_nodes_from(graph_nodes)
   graph.add_edges_from(graph_edges)
+
+  # print(list(graph.nodes))
   # nx.draw(graph)
   # plt.show()
   # print(list(nx.find_cliques(graph, [2])))
   # sys.exit()
 
   generation = 0 
-  population_size = 25
+  population_size = 100
+  max_generation = 100
   population = []
   graph_len = len(graph)
 
@@ -96,7 +126,8 @@ if __name__ == '__main__':
 
   best_fitness = -999999999999
   fittest_individual = None
-  while(generation != 50):
+  fittest_clique_size = math.inf
+  while(generation != max_generation):
     generation += 1
     population = tournament_selection(population)
     random.shuffle(population)
@@ -106,11 +137,11 @@ if __name__ == '__main__':
         new_population.append(child1)
         new_population.append(child2)
 
-    # for individual in new_population:
-    #   if(generation < 200):
-    #       individual = mutation(individual)
-    #   else:
-    #       individual = mutation(individual, 0.2)
+    for individual in new_population:
+      if(best_fitness != fittest_clique_size):
+          individual = mutation(individual, 0.5)
+      else:
+          individual = mutation(individual, 0.3)
 
     population = new_population
     for individual in population:
@@ -119,26 +150,18 @@ if __name__ == '__main__':
           best_fitness = local_fitness
           fittest_individual = individual
 
-    result = []
-    clique_size = 0
-    for index in range(graph_len):
-      # print(index)
-      if fittest_individual[index] == 1:
-        clique_size += 1
-        result.append(index + 1)
-
-    # print(result)
-    # if True:
-    #   for i in result:
-    #     for j in result:
-    #       if i != j:
-    #         print(i,j)
-    #         print(graph.has_edge(i, j))
+    result, fittest_clique_size = individual_potential_clique(graph, fittest_individual)
     if generation % 10 == 0:
+      Gen = np.append(Gen, generation)
+      Fit = np.append(Fit, best_fitness)
       print("Generation: ", generation, "Best_Fitness: ",
-            best_fitness, "Individual: ", result, "Clique Size: ", clique_size)
+            best_fitness, "Individual: ", result, "Clique Size: ", fittest_clique_size)
 
   print('kurwa')
+  plt.plot(Gen, Fit)
+  plt.xlabel("generation")
+  plt.ylabel("best-fitness")
+  plt.show()
   # sum = 0 
   # fitness_array = []
   # for i in range(population_size):
@@ -152,7 +175,7 @@ if __name__ == '__main__':
 
 
   print(graph.has_edge(2,1))
-  # print(clique.max_clique(G))
+  print(clique.max_clique(graph))
   # print(len(clique.max_clique(G)))
   # print(clique.large_clique_size(G))
   # print(nx.find_cliques(G))
