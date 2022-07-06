@@ -1,4 +1,4 @@
-# Basic small world
+# Two normal distributions small world
 
 # Schwefel function
 #
@@ -31,7 +31,7 @@ def do_global_perturbation(solutions):
   return new_vector
 
 def do_local_perturbation(solutions):
-  perturbator_vector = np.random.uniform(low = -0.1, high=0.1, size=(SOLUTIONS_SIZE,VECTOR_SIZE))
+  perturbator_vector = np.random.normal(loc = 0, scale=0.1, size=(SOLUTIONS_SIZE,VECTOR_SIZE))
   new_vector =  perturbator_vector + solutions
   new_vector = np.clip(new_vector,-499.0 , 499.0)
   return new_vector
@@ -69,21 +69,21 @@ if __name__ == '__main__':
   fitness_result = get_best_fitness(solutions)
   best_fitness = fitness_result[0]
   index_fitness = fitness_result[1]
+
   x0 = solutions[index_fitness]
 
-  # print(f'Initial candidates set: {np.array(solutions)}')
   print(f'Best first solution: {x0}')
   print(f'First fitness: {best_fitness}')
 
   while k < 100000:
-    # Mutate last solution by adding uniform random variable to it
+    # Mutate last solution by adding Gaussian random variable to it
     # It will generate matrix of new solutions
     new_local_solutions = do_local_perturbation(solutions)
     new_global_solutions = do_global_perturbation(solutions)
 
     local_fitness = fitness_array(new_local_solutions)
     global_fitness = fitness_array(new_global_solutions)
- 
+
     for i in range(len(solutions)):
       if local_fitness[i] < global_fitness[i]:
         solutions[i] = new_local_solutions[i]
@@ -101,6 +101,9 @@ if __name__ == '__main__':
       x0 = solutions[index_fitness]
     k += 1
 
-  print()
   print(f'Best last solution: {x0}')
   print(f'Last fitness: {best_fitness}')
+
+
+
+
