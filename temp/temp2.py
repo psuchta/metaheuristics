@@ -75,18 +75,10 @@ if __name__ == '__main__':
       else:
         y = random.random()         
         if y < exp(-(best_local_fintess - best_fitness) / (k * temperature)):
-          # print("Jestę")               
-          # print(exp(-(best_local_fintess - best_fitness) / (k * temperature)))
-          # print(-(best_local_fintess - best_fitness) / (k * temperature))
           x0 = new_x0
           best_fitness = best_local_fintess
-        # else:
-        #   print("NIEE Jestę***********")  
-        #   print(exp(-(best_local_fintess - best_fitness) / (k * temperature)))
       temp_counter += 1
     temperature = cool_temperature(init_temp, n)
-    # print('TEMP')
-    # print(temperature)
     n += 1
 
   print()

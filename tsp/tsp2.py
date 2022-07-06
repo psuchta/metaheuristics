@@ -75,7 +75,6 @@ def find_closest(chosen_city_index, cities, visited_cities):
   closest_city = cities[min_city_index - 1]
   city_geo = (float(closest_city[1]), float(closest_city[2]))
   distance = math.dist(chosen_geo, city_geo)
-  # print(distance)
   # Add distance between points to global_distance
   global_distance += distance
   return min_city_index
@@ -91,7 +90,7 @@ if __name__ == '__main__':
   for index in range(len(cities) - 1):
     visited_cities.append(picked_city)
     picked_city = find_closest(picked_city, cities, visited_cities)
-    # print(picked_city)
+
   visited_cities.append(picked_city)
   print(f'Chosen path: {visited_cities}')
   print(f'Global distance: {global_distance}')
