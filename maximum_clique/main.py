@@ -10,9 +10,6 @@ import sys
 Gen = np.array([])
 Fit = np.array([])
 
-# {1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 16, 17, 18, 19, 24, 35, 36, 39, 41, 45, 47, 63, 92, 96, 98, 107}
-# 31
-
 max_clique_size = 2
 
 def load_graph(file_name):
@@ -55,16 +52,30 @@ def create_individual_graph(graph, individual):
   
   return individual_graph
 
-def tournament_selection(population):
+def tournament_selection(graph, population):
   new_population = []
   for j in range(2):
     random.shuffle(population)
     for i in range(0, population_size-1, 2):
-        if fitness(graph, population[i]) > fitness(graph, population[i+1]):
-            new_population.append(population[i])
-        else:
-            new_population.append(population[i+1])
+      if fitness(graph, population[i]) > fitness(graph, population[i+1]):
+        new_population.append(population[i])
+      else:
+        new_population.append(population[i+1])
   return new_population
+
+def roulette_wheel_selection(graph, population):
+    new_population = []
+
+    fitness_array = [fitness(graph, c) for c in population]
+    min_in_fitness = min(fitness_array)
+    fitness_array = [f - min_in_fitness for f in fitness_array]
+    max_fitness = sum(fitness_array)
+
+    selection_probs = [f/max_fitness for f in fitness_array]
+    for i in range(len(population)):
+      new_population.append(population[np.random.choice(len(population), p=selection_probs)])
+
+    return new_population
 
 def create_individual(graph_len):
   individual = []
@@ -78,13 +89,19 @@ def crossover(parent1, parent2, length):
   child2 = parent2[0:position] + parent1[position:length]
   return child1, child2
 
-def mutation(individual,probability = 0.6):
+def mutation(individual,probability = 0.6, clique = False):
   length = len(individual)
   check = random.uniform(0, 1)
   if(check <= probability):
       position = random.randint(0, length-1)
-      # Change value in the position to the opposite number
-      individual[position] = 1 - individual[position]
+      if clique: 
+        while(individual[position] == 1):
+          position = random.randint(0, length-1)
+        # Change value in the position to 1
+        individual[position] = 1
+      else:
+        # Change value to 0 or 1 
+        individual[position] = 1 - individual[position]
   return individual
 
 def individual_potential_clique(graph, individual):
@@ -114,7 +131,7 @@ if __name__ == '__main__':
   # sys.exit()
 
   generation = 0 
-  population_size = 100
+  population_size = 150
   max_generation = 100
   population = []
   graph_len = len(graph)
@@ -129,19 +146,20 @@ if __name__ == '__main__':
   fittest_clique_size = math.inf
   while(generation != max_generation):
     generation += 1
-    population = tournament_selection(population)
+    population = tournament_selection(graph, population)
+    # population = roulette_wheel_selection(graph, population)
     random.shuffle(population)
     new_population = []
     for i in range(0, population_size-1, 2):
-        child1, child2 = crossover(population[i], population[i+1], graph_len)
-        new_population.append(child1)
-        new_population.append(child2)
+      child1, child2 = crossover(population[i], population[i+1], graph_len)
+      new_population.append(child1)
+      new_population.append(child2)
 
     for individual in new_population:
       if(best_fitness != fittest_clique_size):
           individual = mutation(individual, 0.5)
       else:
-          individual = mutation(individual, 0.3)
+        individual = mutation(individual, 0.3)
 
     population = new_population
     for individual in population:
@@ -155,29 +173,14 @@ if __name__ == '__main__':
       Gen = np.append(Gen, generation)
       Fit = np.append(Fit, best_fitness)
       print("Generation: ", generation, "Best_Fitness: ",
-            best_fitness, "Individual: ", result, "Clique Size: ", fittest_clique_size)
+            best_fitness, "Individual: ", result, "Potential Clique Size: ", fittest_clique_size)
 
-  print('kurwa')
   plt.plot(Gen, Fit)
   plt.xlabel("generation")
   plt.ylabel("best-fitness")
   plt.show()
-  # sum = 0 
-  # fitness_array = []
-  # for i in range(population_size):
-  #     f = fitness(graph, population[i])
-  #     fitness_array.append(f)
-  #     sum += f
-  # print(fitness_array)
-  # print(sum)
-  # while(best_fitness != 0 and population != 1000):
 
-
-
-  print(graph.has_edge(2,1))
-  print(clique.max_clique(graph))
-  # print(len(clique.max_clique(G)))
-  # print(clique.large_clique_size(G))
-  # print(nx.find_cliques(G))
-  # for c in nx.find_cliques(G):
-  #   print(c) 
+  print("Max clique found by NetworkX heuristic algorithm")
+  c = clique.max_clique(graph)
+  print(c)
+  print(len(c))
